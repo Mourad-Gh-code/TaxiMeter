@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">Compteur Taxi</string>
+    <string name="app_subtitle">Système de compteur professionnel</string>
+
+    <!-- Driver Profile -->
+    <string name="driver_profile">Profil du Chauffeur</string>
+    <string name="driver_name_format">Nom: %s</string>
+    <string name="driver_age_format">Âge: %d ans</string>
+    <string name="driver_license_format">Permis: %s</string>
+    <string name="qr_code_label">Scannez pour plus d\'informations</string>
+    <string name="qr_code_description">QR Code du chauffeur</string>
+
+    <!-- Trip Information -->
+    <string name="trip_info">Informations de la Course</string>
+    <string name="distance_label">Distance Parcourue</string>
+    <string name="distance_default">0.00 km</string>
+    <string name="distance_format">%.2f km</string>
+
+    <string name="time_label">Temps Écoulé</string>
+    <string name="time_default">0.00 min</string>
+    <string name="time_format">%.2f min</string>
+
+    <string name="fare_label">Tarif Total</string>
+    <string name="fare_default">2.50 DH</string>
+    <string name="fare_format">%.2f DH</string>
+
+    <!-- Buttons -->
+    <string name="start_trip">Démarrer la Course</string>
+    <string name="stop_trip">Arrêter la Course</string>
+
+    <!-- Messages -->
+    <string name="trip_started">Course démarrée</string>
+    <string name="trip_ended">Course terminée</string>
+    <string name="permission_denied">Permission de localisation refusée</string>
+    <string name="location_permission_rationale">L\'application nécessite l\'accès à la localisation pour suivre la course.</string>
+
+    <!-- Notifications -->
+    <string name="channel_name">Notifications de Course</string>
+    <string name="channel_description">Notifications pour les informations de fin de course</string>
+    <string name="notification_title">Course Terminée</string>
+    <string name="notification_text">Tarif total: %.2f DH</string>
+    <string name="notification_detail">Distance: %.2f km\nTemps: %.2f min\nTarif: %.2f DH</string>
+</resources>

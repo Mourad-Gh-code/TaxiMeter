@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Couleurs principales du projet -->
+
+    <!-- Jaune Taxi -->
+    <color name="taxi_yellow">#FFD700</color>
+    <color name="taxi_yellow_dark">#FFC700</color>
+
+    <!-- Noir -->
+    <color name="black">#000000</color>
+
+    <!-- Gris Clair -->
+    <color name="light_gray">#D3D3D3</color>
+
+    <!-- Blanc -->
+    <color name="white">#FFFFFF</color>
+
+    <!-- Rouge -->
+    <color name="red">#FF0000</color>
+    <color name="red_dark">#CC0000</color>
+
+    <!-- Bleu -->
+    <color name="blue">#007BFF</color>
+    <color name="blue_dark">#0056b3</color>
+
+    <!-- Vert -->
+    <color name="green">#28A745</color>
+    <color name="green_dark">#1e7e34</color>
+
+    <!-- Bleu Clair -->
+    <color name="light_blue">#E0F7FF</color>
+
+    <!-- Gris Sombre -->
+    <color name="dark_gray">#343A40</color>
+
+    <!-- Couleurs Material Design (pour compatibilité) -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+</resources>
