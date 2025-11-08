@@ -3,34 +3,44 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1a1d23">
+    android:background="#1a1d23"
+    >
 
     <!-- Header with Logo and Profile Icon -->
 
     <!-- Map Container -->
-
-    <FrameLayout
-        android:id="@+id/mapContainer"
+    <RelativeLayout
+        android:id="@+id/maps"
         android:layout_width="match_parent"
-        android:layout_height="250dp"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="5dp"
-        android:layout_marginBottom="20dp">
+        android:layout_height="wrap_content"
+        android:layout_marginTop="22dp"
+        android:layout_marginBottom="30dp"
+        android:background="@drawable/fare_container_bg">
+
+        <FrameLayout
+            android:id="@+id/mapContainer"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="17dp"
+            android:layout_marginBottom="20dp">
 
 
-    </FrameLayout>
+        </FrameLayout>
+    </RelativeLayout>
 
     <RelativeLayout
         android:id="@+id/fareContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
+
+        android:layout_below="@+id/maps"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="281dp"
+        android:layout_marginTop="-23dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="24dp"
         android:background="@drawable/fare_container_bg"
-        android:padding="20dp">
+        android:padding="10dp">
 
         <!-- Progress Circle Background -->
         <View
@@ -69,7 +79,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:fontFamily="sans-serif"
-                android:text="€24.50"
+                android:text="00.00 DH"
                 android:textColor="#FFD700"
                 android:textSize="56sp"
                 android:textStyle="bold" />
@@ -96,7 +106,7 @@
                         android:fontFamily="sans-serif"
                         android:text="DISTANCE:"
                         android:textColor="#6B7885"
-                        android:textSize="11sp" />
+                        android:textSize="22dp" />
 
                     <TextView
                         android:id="@+id/distanceText"
@@ -104,9 +114,9 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:fontFamily="sans-serif-medium"
-                        android:text="8.2 km"
+                        android:text="00.0 km"
                         android:textColor="#FFFFFF"
-                        android:textSize="16sp"
+                        android:textSize="22dp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -114,7 +124,7 @@
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="32dp"
+                    android:layout_marginStart="22dp"
                     android:gravity="center"
                     android:orientation="vertical">
 
@@ -124,7 +134,7 @@
                         android:fontFamily="sans-serif"
                         android:text="TIME:"
                         android:textColor="#6B7885"
-                        android:textSize="11sp" />
+                        android:textSize="22sp" />
 
                     <TextView
                         android:id="@+id/timeText"
@@ -132,19 +142,20 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:fontFamily="sans-serif-medium"
-                        android:text="15:30 min"
+                        android:text="00:00 min"
                         android:textColor="#FFFFFF"
-                        android:textSize="16sp"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
 
             <!-- Start Trip Button -->
+
             <Button
                 android:id="@+id/btnStartTrip"
                 android:layout_width="140dp"
                 android:layout_height="140dp"
-                android:layout_marginTop="32dp"
+                android:layout_marginTop="42dp"
                 android:background="@drawable/start_trip_button_bg"
                 android:fontFamily="sans-serif-medium"
                 android:text="START TRIP"
@@ -156,7 +167,7 @@
                 android:id="@+id/btnEndTrip"
                 android:layout_width="160dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="-42dp"
+
                 android:background="@drawable/end_trip_button_bg"
                 android:fontFamily="sans-serif-medium"
                 android:text="END TRIP"

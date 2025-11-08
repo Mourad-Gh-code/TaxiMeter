@@ -273,7 +273,7 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         val timeMinutes = elapsedTime / 60.0
         val fare = calculateFare(distanceKm, timeMinutes)
 
-        fareAmount.text = String.format("€%.2f", fare)
+        fareAmount.text = String.format("%.2f DH", fare)
         distanceText.text = String.format("%.2f km", distanceKm)
 
         val minutes = (elapsedTime / 60).toInt()
