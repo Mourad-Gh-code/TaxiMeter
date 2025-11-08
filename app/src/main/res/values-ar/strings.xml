@@ -42,4 +42,4 @@
     <string name="notification_title">اكتملت الرحلة</string>
     <string name="notification_text">التعريفة الإجمالية: %.2f درهم</string>
     <string name="notification_detail">المسافة: %.2f كم\nالوقت: %.2f دقيقة\nالتعريفة: %.2f درهم</string>
-</resources><?xml version="1.0" encoding="utf-8"?>
+</resources>
