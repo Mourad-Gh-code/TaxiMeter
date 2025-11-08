@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="YellowSwitchTheme" parent="Theme.AppCompat.Light">
+        <item name="colorControlActivated">#FFD700</item>
+        <item name="colorSwitchThumbNormal">#8B9DAE</item>
+        <item name="android:colorForeground">#FFD700</item>
+    </style>
+</resources>

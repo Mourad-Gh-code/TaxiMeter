@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1d23"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Settings Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textColor="#FFD700"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="24dp" />
+
+        <!-- General Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="General"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Notifications -->
+        <RelativeLayout
+            android:id="@+id/settingNotifications"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@drawable/settings_item_bg"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:id="@+id/iconNotifications"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_notifications"
+                app:tint="#FFD700" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/iconNotifications"
+                android:layout_marginStart="16dp"
+                android:text="Notifications"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchNotifications"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:checked="true"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:theme="@style/YellowSwitchTheme" />
+        </RelativeLayout>
+
+        <!-- Sound & Haptics -->
+        <RelativeLayout
+            android:id="@+id/settingSoundHaptics"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@drawable/settings_item_bg"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:id="@+id/iconSound"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_sound"
+                app:tint="#FFD700"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/iconSound"
+                android:layout_marginStart="16dp"
+                android:text="Sound &amp; Haptics"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchSound"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:checked="true"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:theme="@style/YellowSwitchTheme" />
+        </RelativeLayout>
+
+        <!-- Language -->
+        <RelativeLayout
+            android:id="@+id/settingLanguage"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@drawable/settings_item_bg"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_marginBottom="32dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="4dp"
+                android:text="Language"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+
+            <TextView
+                android:id="@+id/txtLanguageValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="English"
+                android:textColor="#8B9DAE"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+        </RelativeLayout>
+
+        <!-- Privacy & Data Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Privacy &amp; Data"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Data & Privacy Policy -->
+        <RelativeLayout
+            android:id="@+id/settingPrivacyPolicy"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@drawable/settings_item_bg"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_marginBottom="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/iconPrivacy"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_privacy"
+                app:tint="#FFD700"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/iconPrivacy"
+                android:layout_marginStart="16dp"
+                android:text="Data &amp; Privacy Policy"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_arrow_right"
+                app:tint="#FFD700"/>
+        </RelativeLayout>
+
+        <!-- Location Services -->
+        <RelativeLayout
+            android:id="@+id/settingLocation"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@drawable/settings_item_bg"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:id="@+id/iconLocation"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_location"
+                app:tint="#FFD700"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/iconLocation"
+                android:layout_marginStart="16dp"
+                android:text="Location Services"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:checked="true"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:theme="@style/YellowSwitchTheme" />
+        </RelativeLayout>
+
+        <!-- Theme -->
+        <RelativeLayout
+            android:id="@+id/settingTheme"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@drawable/settings_item_bg"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_marginBottom="12dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/iconTheme"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_theme"
+                app:tint="#FFD700"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/iconTheme"
+                android:layout_marginStart="16dp"
+                android:text="Theme"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+
+            <TextView
+                android:id="@+id/txtThemeValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="Dark"
+                android:textColor="#8B9DAE"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+        </RelativeLayout>
+
+        <!-- Measurement Units -->
+        <RelativeLayout
+            android:id="@+id/settingMeasurement"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:background="@drawable/settings_item_bg"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_marginBottom="32dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/iconMeasurement"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_centerVertical="true"
+                android:src="@drawable/ic_measurement"
+                app:tint="#FFD700"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/iconMeasurement"
+                android:layout_marginStart="16dp"
+                android:text="Measurement Units"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+
+            <TextView
+                android:id="@+id/txtMeasurementValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:text="km / €"
+                android:textColor="#8B9DAE"
+                android:textSize="16sp"
+                android:fontFamily="sans-serif"/>
+        </RelativeLayout>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <!-- Log Out Button -->
+            <Button
+                android:id="@+id/btnLogOut"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Log Out"
+                android:textColor="#FFD700"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:background="@drawable/button_outline_yellow_bg"
+                android:fontFamily="sans-serif-medium"/>
+
+            <!-- Delete Account Button -->
+            <Button
+                android:id="@+id/btnDeleteAccount"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Delete Account"
+                android:textColor="#FFD700"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:background="@drawable/button_outline_yellow_bg"
+                android:fontFamily="sans-serif-medium"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
