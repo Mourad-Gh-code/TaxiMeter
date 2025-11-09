@@ -5,17 +5,21 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -26,9 +30,11 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.PermissionCallbacks {
@@ -36,19 +42,27 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
     // Map
     private var googleMap: GoogleMap? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var locationCallback: LocationCallback
+    private var locationCallback: LocationCallback? = null
 
-    // UI Elements
+    // UI Elements - Normal View
     private lateinit var fareAmount: TextView
     private lateinit var distanceText: TextView
     private lateinit var timeText: TextView
     private lateinit var btnStartTrip: Button
     private lateinit var btnEndTrip: Button
+    private lateinit var fareContainer: View
+
+    // UI Elements - Seven Segment View
+    private var sevenSegmentContainer: View? = null
+    private var sevenSegmentFare: TextView? = null
+    private var sevenSegmentDistance: TextView? = null
+    private var sevenSegmentTime: TextView? = null
 
     // Trip Data
     private var isTripStarted = false
     private var startLocation: Location? = null
     private var currentLocation: Location? = null
+    private var previousLocation: Location? = null
     private var totalDistance = 0.0 // in meters
     private var tripStartTime = 0L
     private var elapsedTime = 0L // in seconds
@@ -57,6 +71,7 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
     private val BASE_FARE = 2.5 // DH
     private val FARE_PER_KM = 1.5 // DH
     private val FARE_PER_MINUTE = 0.5 // DH
+    private val MIN_MOVEMENT_DISTANCE = 5.0 // meters
 
     // Timer
     private val handler = Handler(Looper.getMainLooper())
@@ -72,11 +87,18 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
 
     // Polyline for route
     private val routePoints = mutableListOf<LatLng>()
+    private var routePolyline: Polyline? = null
+
+    // View switcher
+    private var isSevenSegmentView = false
+    private var gestureDetector: GestureDetector? = null
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 123
         private const val NOTIFICATION_CHANNEL_ID = "taxi_meter_channel"
         private const val NOTIFICATION_ID = 1
+        private const val SWIPE_THRESHOLD = 100
+        private const val SWIPE_VELOCITY_THRESHOLD = 100
     }
 
     override fun onCreateView(
@@ -90,19 +112,106 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Initialize views
+        initializeViews(view)
+        setupButtons()
+        createNotificationChannel()
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+
+        setupMap()
+
+        // Check and request permissions
+        checkLocationPermission()
+    }
+
+    private fun initializeViews(view: View) {
         fareAmount = view.findViewById(R.id.fareAmount)
         distanceText = view.findViewById(R.id.distanceText)
         timeText = view.findViewById(R.id.timeText)
         btnStartTrip = view.findViewById(R.id.btnStartTrip)
         btnEndTrip = view.findViewById(R.id.btnEndTrip)
+        fareContainer = view.findViewById(R.id.fareContainer)
+
+        // Seven segment views (optional if included)
+        sevenSegmentContainer = view.findViewById(R.id.sevenSegmentContainer)
+        sevenSegmentFare = view.findViewById(R.id.sevenSegmentFare)
+        sevenSegmentDistance = view.findViewById(R.id.sevenSegmentDistance)
+        sevenSegmentTime = view.findViewById(R.id.sevenSegmentTime)
+
+        // Hide seven segment by default
+        sevenSegmentContainer?.visibility = View.GONE
 
         btnEndTrip.visibility = View.GONE
 
-        // Initialize location client
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+        setupGestureDetector()
+    }
 
-        // Setup map
+    private fun setupGestureDetector() {
+        gestureDetector = GestureDetector(requireContext(), object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+
+                if (abs(diffX) > abs(diffY) &&
+                    abs(diffX) > SWIPE_THRESHOLD &&
+                    abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+
+                    if (diffX > 0) {
+                        onSwipeRight()
+                    } else {
+                        onSwipeLeft()
+                    }
+                    return true
+                }
+                return false
+            }
+        })
+
+        fareContainer.setOnTouchListener { _, event ->
+            gestureDetector?.onTouchEvent(event) ?: false
+        }
+
+        sevenSegmentContainer?.setOnTouchListener { _, event ->
+            gestureDetector?.onTouchEvent(event) ?: false
+        }
+    }
+
+    private fun onSwipeLeft() {
+        if (!isSevenSegmentView && sevenSegmentContainer != null) {
+            switchToSevenSegmentView()
+        }
+    }
+
+    private fun onSwipeRight() {
+        if (isSevenSegmentView) {
+            switchToNormalView()
+        }
+    }
+
+    private fun switchToSevenSegmentView() {
+        isSevenSegmentView = true
+        fareContainer.visibility = View.GONE
+        sevenSegmentContainer?.visibility = View.VISIBLE
+        updateUI()
+        Toast.makeText(requireContext(), "Seven-Segment View", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun switchToNormalView() {
+        isSevenSegmentView = false
+        fareContainer.visibility = View.VISIBLE
+        sevenSegmentContainer?.visibility = View.GONE
+        updateUI()
+        Toast.makeText(requireContext(), "Normal View", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun setupMap() {
         val mapFragment = childFragmentManager.findFragmentById(R.id.mapContainer) as? SupportMapFragment
             ?: SupportMapFragment.newInstance().also {
                 childFragmentManager.beginTransaction()
@@ -110,8 +219,9 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
                     .commit()
             }
         mapFragment.getMapAsync(this)
+    }
 
-        // Setup buttons
+    private fun setupButtons() {
         btnStartTrip.setOnClickListener {
             startTrip()
         }
@@ -119,45 +229,41 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         btnEndTrip.setOnClickListener {
             endTrip()
         }
+    }
 
-        // Create notification channel
-        createNotificationChannel()
+    private fun checkLocationPermission() {
+        val fineLocation = Manifest.permission.ACCESS_FINE_LOCATION
+        val coarseLocation = Manifest.permission.ACCESS_COARSE_LOCATION
 
-        // Request location permission
-        requestLocationPermission()
+        if (ActivityCompat.checkSelfPermission(requireContext(), fineLocation) == PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(requireContext(), coarseLocation) == PackageManager.PERMISSION_GRANTED) {
+            // Permission granted
+            setupMapUI()
+            setupLocationUpdates()
+        } else {
+            // Request permission
+            requestPermissions(
+                arrayOf(fineLocation, coarseLocation),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+        }
     }
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-        setupMap()
-        requestLocationPermission()
+        checkLocationPermission()
     }
 
     @SuppressLint("MissingPermission")
-    private fun setupMap() {
+    private fun setupMapUI() {
         googleMap?.apply {
-            isMyLocationEnabled = true
-            uiSettings.isZoomControlsEnabled = true
-            uiSettings.isMyLocationButtonEnabled = true
-        }
-    }
-
-    @AfterPermissionGranted(LOCATION_PERMISSION_REQUEST_CODE)
-    private fun requestLocationPermission() {
-        val perms = arrayOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-
-        if (EasyPermissions.hasPermissions(requireContext(), *perms)) {
-            setupLocationUpdates()
-        } else {
-            EasyPermissions.requestPermissions(
-                this,
-                "This app needs location permission to track your trip",
-                LOCATION_PERMISSION_REQUEST_CODE,
-                *perms
-            )
+            try {
+                isMyLocationEnabled = true
+                uiSettings.isZoomControlsEnabled = true
+                uiSettings.isMyLocationButtonEnabled = true
+            } catch (e: SecurityException) {
+                Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -177,11 +283,15 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
             }
         }
 
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            Looper.getMainLooper()
-        )
+        try {
+            fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback!!,
+                Looper.getMainLooper()
+            )
+        } catch (e: SecurityException) {
+            Toast.makeText(requireContext(), "Cannot access location", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun handleLocationUpdate(location: Location) {
@@ -189,32 +299,36 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         val latLng = LatLng(location.latitude, location.longitude)
 
         if (isTripStarted) {
-            // Calculate distance from last point
-            if (routePoints.isNotEmpty()) {
-                val lastPoint = routePoints.last()
-                val lastLocation = Location("").apply {
-                    latitude = lastPoint.latitude
-                    longitude = lastPoint.longitude
+            previousLocation?.let { prevLoc ->
+                val distanceFromLast = location.distanceTo(prevLoc)
+
+                if (distanceFromLast >= MIN_MOVEMENT_DISTANCE) {
+                    totalDistance += distanceFromLast
+                    previousLocation = location
+
+                    routePoints.add(latLng)
+                    updatePolyline()
                 }
-                totalDistance += location.distanceTo(lastLocation)
+            } ?: run {
+                previousLocation = location
+                routePoints.add(latLng)
             }
-
-            // Add to route
-            routePoints.add(latLng)
-
-            // Draw polyline
-            googleMap?.addPolyline(
-                PolylineOptions()
-                    .addAll(routePoints)
-                    .color(ContextCompat.getColor(requireContext(), R.color.taxi_yellow))
-                    .width(10f)
-            )
 
             updateUI()
         }
 
-        // Move camera to current location
         googleMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16f))
+    }
+
+    private fun updatePolyline() {
+        routePolyline?.remove()
+
+        routePolyline = googleMap?.addPolyline(
+            PolylineOptions()
+                .addAll(routePoints)
+                .color(ContextCompat.getColor(requireContext(), R.color.taxi_yellow))
+                .width(10f)
+        )
     }
 
     private fun startTrip() {
@@ -225,6 +339,7 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
 
         isTripStarted = true
         startLocation = currentLocation
+        previousLocation = currentLocation
         tripStartTime = System.currentTimeMillis()
         totalDistance = 0.0
         elapsedTime = 0L
@@ -262,10 +377,10 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         btnStartTrip.visibility = View.VISIBLE
         btnEndTrip.visibility = View.GONE
 
-        // Send notification
         sendTripNotification()
+        saveToHistory()
 
-        Toast.makeText(requireContext(), "Trip ended!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), "Trip ended! Added to history.", Toast.LENGTH_SHORT).show()
     }
 
     private fun updateUI() {
@@ -273,16 +388,41 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         val timeMinutes = elapsedTime / 60.0
         val fare = calculateFare(distanceKm, timeMinutes)
 
-        fareAmount.text = String.format("%.2f DH", fare)
-        distanceText.text = String.format("%.2f km", distanceKm)
-
         val minutes = (elapsedTime / 60).toInt()
         val seconds = (elapsedTime % 60).toInt()
-        timeText.text = String.format("%02d:%02d min", minutes, seconds)
+
+        if (isSevenSegmentView) {
+            // Update seven segment display
+            sevenSegmentFare?.text = String.format("%06.2f", fare)
+            sevenSegmentDistance?.text = String.format("%05.2f", distanceKm)
+            sevenSegmentTime?.text = String.format("%02d:%02d", minutes, seconds)
+        } else {
+            // Update normal display
+            fareAmount.text = String.format("%.2f DH", fare)
+            distanceText.text = String.format("%.2f km", distanceKm)
+            timeText.text = String.format("%02d:%02d min", minutes, seconds)
+        }
     }
 
     private fun calculateFare(distanceKm: Double, timeMinutes: Double): Double {
         return BASE_FARE + (distanceKm * FARE_PER_KM) + (timeMinutes * FARE_PER_MINUTE)
+    }
+
+    private fun saveToHistory() {
+        val prefs = requireContext().getSharedPreferences("trip_history", Context.MODE_PRIVATE)
+        val editor = prefs.edit()
+
+        val historyCount = prefs.getInt("history_count", 0)
+        val newCount = historyCount + 1
+
+        val distanceKm = totalDistance / 1000.0
+        val timeMinutes = elapsedTime / 60.0
+        val fare = calculateFare(distanceKm, timeMinutes)
+
+        editor.putString("trip_$newCount",
+            "$totalDistance|$elapsedTime|$fare|${System.currentTimeMillis()}")
+        editor.putInt("history_count", newCount)
+        editor.apply()
     }
 
     private fun createNotificationChannel() {
@@ -308,7 +448,7 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         val notification = NotificationCompat.Builder(requireContext(), NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_car)
             .setContentTitle("Trip Completed")
-            .setContentText(String.format("Distance: %.2f km | Time: %d min | Fare: €%.2f",
+            .setContentText(String.format("Distance: %.2f km | Time: %d min | Fare: %.2f DH",
                 distanceKm, timeMinutes.roundToInt(), fare))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
@@ -324,10 +464,25 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
+
+        when (requestCode) {
+            LOCATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Permission granted
+                    setupMapUI()
+                    setupLocationUpdates()
+                    Toast.makeText(requireContext(), "Location permission granted", Toast.LENGTH_SHORT).show()
+                } else {
+                    // Permission denied
+                    Toast.makeText(requireContext(), "Location permission is required for this app", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
+        setupMapUI()
         setupLocationUpdates()
     }
 
@@ -338,6 +493,18 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
     override fun onDestroyView() {
         super.onDestroyView()
         handler.removeCallbacks(timerRunnable)
-        fusedLocationClient.removeLocationUpdates(locationCallback)
+        locationCallback?.let {
+            fusedLocationClient.removeLocationUpdates(it)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-check permission when fragment resumes
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            if (locationCallback == null) {
+                setupLocationUpdates()
+            }
+        }
     }
 }
