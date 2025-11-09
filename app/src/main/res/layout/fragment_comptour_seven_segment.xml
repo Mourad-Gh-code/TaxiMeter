@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Seven Segment Display Layout - Use as ViewStub or separate layout -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sevenSegmentContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:padding="16dp"
+    android:visibility="visible">
+
+    <!-- TOTAL FARE - Large Display -->
+    <LinearLayout
+        android:id="@+id/totalFareSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:text="TOTAL"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:letterSpacing="0.2" />
+
+        <!-- Seven-Segment Style Fare Display -->
+        <TextView
+            android:id="@+id/sevenSegmentFare"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="monospace"
+            android:text="000.00"
+            android:textColor="#FF0000"
+            android:textSize="80sp"
+            android:textStyle="bold"
+            android:shadowColor="#FF0000"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="10" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:text="Dhs"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:layout_marginTop="8dp" />
+
+    </LinearLayout>
+
+    <!-- Time and Distance - Bottom -->
+    <LinearLayout
+        android:id="@+id/bottomInfoSection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/totalFareSection"
+        android:layout_marginTop="48dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <!-- Time Display -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingEnd="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="Temps"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/sevenSegmentTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:text="00:00"
+                android:textColor="#FF0000"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:shadowColor="#FF0000"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="5" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="m"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="2dp"
+            android:layout_height="80dp"
+            android:background="#333333" />
+
+        <!-- Distance Display -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingStart="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="Distance"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/sevenSegmentDistance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="monospace"
+                android:text="00.00"
+                android:textColor="#FF0000"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:shadowColor="#FF0000"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="5" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:text="km"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Swipe Indicator -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="16dp"
+        android:text="◄ Swipe to switch view ►"
+        android:textColor="#666666"
+        android:textSize="12sp"
+        android:fontFamily="monospace" />
+
+</RelativeLayout>
