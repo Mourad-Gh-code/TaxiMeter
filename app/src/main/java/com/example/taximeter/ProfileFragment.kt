@@ -18,11 +18,11 @@ import com.google.zxing.qrcode.QRCodeWriter
 class ProfileFragment : Fragment() {
 
     // Driver Information
-    private val driverName = "John Smith"
-    private val driverEmail = "john.smith@email.com"
-    private val driverAge = 35
+    private val driverName = "Mourad Ghalloumi"
+    private val driverEmail = "mouradghalloumi@email.com"
+    private val driverAge = 20
     private val carMatricule = "ABC-1234"
-    private val rating = 4.5f // out of 5
+    private val rating = 5.0f // out of 5
 
     // Views
     private lateinit var avatarInitial: TextView

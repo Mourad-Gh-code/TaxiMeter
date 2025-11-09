@@ -2,8 +2,11 @@ package com.example.taximeter
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -13,9 +16,11 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 class MainActivity : AppCompatActivity() {
 
     private lateinit var bottomNavigation: BottomNavigationView
+    private val TAG = "MainActivity"
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 100
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 101
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,10 +29,8 @@ class MainActivity : AppCompatActivity() {
 
         bottomNavigation = findViewById(R.id.bottomNavigation)
 
-        // Request location permission when app starts
-        if (!hasLocationPermission()) {
-            requestLocationPermission()
-        }
+        // Request ALL permissions when app starts
+        requestAllPermissions()
 
         // Set default fragment
         if (savedInstanceState == null) {
@@ -56,12 +59,51 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+
+        Log.d(TAG, "MainActivity created")
     }
 
+    /**
+     * Load a fragment into the container
+     */
     private fun loadFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainer, fragment)
             .commit()
+
+        Log.d(TAG, "Loaded fragment: ${fragment.javaClass.simpleName}")
+    }
+
+    /**
+     * Request all necessary permissions at once
+     */
+    private fun requestAllPermissions() {
+        val permissionsToRequest = mutableListOf<String>()
+
+        // Check location permissions
+        if (!hasLocationPermission()) {
+            permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION)
+            permissionsToRequest.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+        }
+
+        // Check notification permission (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!hasNotificationPermission()) {
+                permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        // Request all missing permissions
+        if (permissionsToRequest.isNotEmpty()) {
+            Log.d(TAG, "Requesting permissions: $permissionsToRequest")
+            ActivityCompat.requestPermissions(
+                this,
+                permissionsToRequest.toTypedArray(),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+        } else {
+            Log.d(TAG, "All permissions already granted")
+        }
     }
 
     /**
@@ -71,7 +113,7 @@ class MainActivity : AppCompatActivity() {
         return ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED &&
+        ) == PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.ACCESS_COARSE_LOCATION
@@ -79,21 +121,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Request location permissions from the user
+     * Check if notification permission is granted (Android 13+)
      */
-    private fun requestLocationPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ),
-            LOCATION_PERMISSION_REQUEST_CODE
-        )
+    private fun hasNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true // Not needed on older Android versions
+        }
     }
 
     /**
-     * Handle the permission request result
+     * Handle permission request results
      */
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -104,38 +146,106 @@ class MainActivity : AppCompatActivity() {
 
         when (requestCode) {
             LOCATION_PERMISSION_REQUEST_CODE -> {
-                if (grantResults.isNotEmpty() &&
-                    grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                    // All permissions granted
-                    Toast.makeText(
-                        this,
-                        "Location permission granted!",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if (grantResults.isNotEmpty()) {
+                    // Check which permissions were granted
+                    val locationGranted = grantResults.any { it == PackageManager.PERMISSION_GRANTED }
 
-                    // Reload ComptourFragment if it's currently displayed
-                    val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-                    if (currentFragment is ComptourFragment) {
-                        loadFragment(ComptourFragment())
-                    }
-                } else {
-                    // Permission denied
-                    Toast.makeText(
-                        this,
-                        "Location permission is required for the taxi meter to work properly",
-                        Toast.LENGTH_LONG
-                    ).show()
-
-                    // Check if user selected "Don't ask again"
-                    if (!ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    if (locationGranted) {
+                        Log.d(TAG, "✅ Location permission granted")
                         Toast.makeText(
                             this,
-                            "Please enable location permission in app settings",
+                            "✅ Location permission granted!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        // Notify all fragments that permission was granted
+                        refreshAllFragments()
+                    } else {
+                        Log.w(TAG, "❌ Location permission denied")
+                        Toast.makeText(
+                            this,
+                            "⚠️ Location permission is required for the taxi meter to work",
                             Toast.LENGTH_LONG
                         ).show()
+
+                        // Check if user selected "Don't ask again"
+                        if (!ActivityCompat.shouldShowRequestPermissionRationale(
+                                this,
+                                Manifest.permission.ACCESS_FINE_LOCATION
+                            )) {
+                            // Show dialog to open settings
+                            showPermissionSettingsDialog()
+                        }
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Refresh all active fragments to apply permission changes
+     */
+    private fun refreshAllFragments() {
+        Log.d(TAG, "Refreshing all fragments")
+
+        supportFragmentManager.fragments.forEach { fragment ->
+            when (fragment) {
+                is HomeFragment -> {
+                    fragment.onPermissionGranted()
+                    Log.d(TAG, "Notified HomeFragment of permission grant")
+                }
+                is ComptourFragment -> {
+                    fragment.onPermissionGranted()
+                    Log.d(TAG, "Notified ComptourFragment of permission grant")
+                }
+            }
+        }
+    }
+
+    /**
+     * Show dialog to guide user to app settings
+     */
+    private fun showPermissionSettingsDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Location Permission Required")
+            .setMessage(
+                "This app needs location access to:\n\n" +
+                        "• Show your location on the map\n" +
+                        "• Track distance traveled\n" +
+                        "• Calculate accurate taxi fares\n\n" +
+                        "Please enable location permission in app settings."
+            )
+            .setPositiveButton("Open Settings") { _, _ ->
+                // Open app settings
+                val intent = android.content.Intent(
+                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                )
+                intent.data = android.net.Uri.fromParts("package", packageName, null)
+                startActivity(intent)
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+                Toast.makeText(
+                    this,
+                    "Limited functionality without location permission",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    /**
+     * Check permissions again when app resumes (in case user granted from settings)
+     */
+    override fun onResume() {
+        super.onResume()
+
+        Log.d(TAG, "MainActivity resumed")
+
+        // If permission was just granted from settings, refresh fragments
+        if (hasLocationPermission()) {
+            refreshAllFragments()
         }
     }
 }

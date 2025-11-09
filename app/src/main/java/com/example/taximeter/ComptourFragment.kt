@@ -5,12 +5,15 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.GestureDetector
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -19,7 +22,6 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -32,12 +34,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
-import pub.devrel.easypermissions.AfterPermissionGranted
-import pub.devrel.easypermissions.EasyPermissions
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.PermissionCallbacks {
+class ComptourFragment : Fragment(), OnMapReadyCallback {
 
     // Map
     private var googleMap: GoogleMap? = null
@@ -93,6 +93,8 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
     private var isSevenSegmentView = false
     private var gestureDetector: GestureDetector? = null
 
+    private val TAG = "ComptourFragment"
+
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 123
         private const val NOTIFICATION_CHANNEL_ID = "taxi_meter_channel"
@@ -120,8 +122,10 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
 
         setupMap()
 
-        // Check and request permissions
-        checkLocationPermission()
+        // Check permission and setup if granted
+        checkAndSetupLocation()
+
+        Log.d(TAG, "ComptourFragment initialized")
     }
 
     private fun initializeViews(view: View) {
@@ -199,16 +203,43 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         isSevenSegmentView = true
         fareContainer.visibility = View.GONE
         sevenSegmentContainer?.visibility = View.VISIBLE
+
+        // Enable landscape rotation for 7-segment view
+        requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+
         updateUI()
-        Toast.makeText(requireContext(), "Seven-Segment View", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), "Seven-Segment View (Rotate device for landscape)", Toast.LENGTH_SHORT).show()
+        Log.d(TAG, "Switched to seven-segment view")
     }
 
     private fun switchToNormalView() {
         isSevenSegmentView = false
         fareContainer.visibility = View.VISIBLE
         sevenSegmentContainer?.visibility = View.GONE
+
+        // Lock back to portrait for normal view
+        requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
         updateUI()
         Toast.makeText(requireContext(), "Normal View", Toast.LENGTH_SHORT).show()
+        Log.d(TAG, "Switched to normal view")
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        // Handle orientation change
+        if (isSevenSegmentView) {
+            when (newConfig.orientation) {
+                Configuration.ORIENTATION_LANDSCAPE -> {
+                    Log.d(TAG, "Seven-segment view in landscape mode")
+                    Toast.makeText(requireContext(), "Landscape Mode", Toast.LENGTH_SHORT).show()
+                }
+                Configuration.ORIENTATION_PORTRAIT -> {
+                    Log.d(TAG, "Seven-segment view in portrait mode")
+                }
+            }
+        }
     }
 
     private fun setupMap() {
@@ -231,49 +262,87 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         }
     }
 
-    private fun checkLocationPermission() {
-        val fineLocation = Manifest.permission.ACCESS_FINE_LOCATION
-        val coarseLocation = Manifest.permission.ACCESS_COARSE_LOCATION
+    /**
+     * Check if location permission is granted
+     */
+    private fun hasLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+    }
 
-        if (ActivityCompat.checkSelfPermission(requireContext(), fineLocation) == PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(requireContext(), coarseLocation) == PackageManager.PERMISSION_GRANTED) {
-            // Permission granted
+    /**
+     * Check permission and setup location if granted
+     */
+    private fun checkAndSetupLocation() {
+        if (hasLocationPermission()) {
+            Log.d(TAG, "Location permission granted")
             setupMapUI()
             setupLocationUpdates()
         } else {
-            // Request permission
-            requestPermissions(
-                arrayOf(fineLocation, coarseLocation),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
+            Log.w(TAG, "Location permission not granted")
+            Toast.makeText(
+                requireContext(),
+                "Please grant location permission to use the taxi meter",
+                Toast.LENGTH_SHORT
+            ).show()
         }
+    }
+
+    /**
+     * Called from MainActivity when permission is granted
+     */
+    fun onPermissionGranted() {
+        Log.d(TAG, "Permission granted callback received")
+        checkAndSetupLocation()
     }
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
-        checkLocationPermission()
+        Log.d(TAG, "Map is ready")
+        checkAndSetupLocation()
     }
 
+    /**
+     * ✅ FIXED: Now checks permission BEFORE enabling location
+     */
     @SuppressLint("MissingPermission")
     private fun setupMapUI() {
         googleMap?.apply {
-            try {
-                isMyLocationEnabled = true
-                uiSettings.isZoomControlsEnabled = true
-                uiSettings.isMyLocationButtonEnabled = true
-            } catch (e: SecurityException) {
-                Toast.makeText(requireContext(), "Location permission denied", Toast.LENGTH_SHORT).show()
+            if (hasLocationPermission()) {
+                try {
+                    isMyLocationEnabled = true
+                    uiSettings.isZoomControlsEnabled = true
+                    uiSettings.isMyLocationButtonEnabled = true
+                    Log.d(TAG, "Map UI setup complete")
+                } catch (e: SecurityException) {
+                    Log.e(TAG, "SecurityException in setupMapUI: ${e.message}")
+                    Toast.makeText(requireContext(), "Cannot access location", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Log.w(TAG, "Cannot setup map UI: permission not granted")
             }
         }
     }
 
     @SuppressLint("MissingPermission")
     private fun setupLocationUpdates() {
-        val locationRequest = LocationRequest.create().apply {
-            interval = 2000 // 2 seconds
-            fastestInterval = 1000 // 1 second
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        if (!hasLocationPermission()) {
+            Log.w(TAG, "Cannot setup location updates: permission not granted")
+            return
         }
+
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY,
+            2000 // 2 seconds
+        ).apply {
+            setMinUpdateIntervalMillis(1000) // 1 second
+        }.build()
 
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
@@ -289,7 +358,9 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
                 locationCallback!!,
                 Looper.getMainLooper()
             )
+            Log.d(TAG, "Location updates started")
         } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException in setupLocationUpdates: ${e.message}")
             Toast.makeText(requireContext(), "Cannot access location", Toast.LENGTH_SHORT).show()
         }
     }
@@ -332,6 +403,15 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
     }
 
     private fun startTrip() {
+        if (!hasLocationPermission()) {
+            Toast.makeText(
+                requireContext(),
+                "Location permission required to start trip",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
         if (currentLocation == null) {
             Toast.makeText(requireContext(), "Waiting for location...", Toast.LENGTH_SHORT).show()
             return
@@ -359,7 +439,8 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
 
         handler.post(timerRunnable)
 
-        Toast.makeText(requireContext(), "Trip started!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), "🚕 Trip started!", Toast.LENGTH_SHORT).show()
+        Log.d(TAG, "Trip started")
     }
 
     private fun endTrip() {
@@ -381,6 +462,7 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         saveToHistory()
 
         Toast.makeText(requireContext(), "Trip ended! Added to history.", Toast.LENGTH_SHORT).show()
+        Log.d(TAG, "Trip ended")
     }
 
     private fun updateUI() {
@@ -423,6 +505,8 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
             "$totalDistance|$elapsedTime|$fare|${System.currentTimeMillis()}")
         editor.putInt("history_count", newCount)
         editor.apply()
+
+        Log.d(TAG, "Trip saved to history")
     }
 
     private fun createNotificationChannel() {
@@ -458,53 +542,33 @@ class ComptourFragment : Fragment(), OnMapReadyCallback, EasyPermissions.Permiss
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        when (requestCode) {
-            LOCATION_PERMISSION_REQUEST_CODE -> {
-                if (grantResults.isNotEmpty() &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Permission granted
-                    setupMapUI()
-                    setupLocationUpdates()
-                    Toast.makeText(requireContext(), "Location permission granted", Toast.LENGTH_SHORT).show()
-                } else {
-                    // Permission denied
-                    Toast.makeText(requireContext(), "Location permission is required for this app", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
-        setupMapUI()
-        setupLocationUpdates()
-    }
-
-    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
-        Toast.makeText(requireContext(), "Location permission is required", Toast.LENGTH_LONG).show()
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         handler.removeCallbacks(timerRunnable)
         locationCallback?.let {
             fusedLocationClient.removeLocationUpdates(it)
         }
+
+        // Reset orientation to portrait when leaving fragment
+        requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
+        Log.d(TAG, "ComptourFragment destroyed")
     }
 
     override fun onResume() {
         super.onResume()
+        Log.d(TAG, "Fragment resumed")
+
         // Re-check permission when fragment resumes
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (hasLocationPermission()) {
             if (locationCallback == null) {
                 setupLocationUpdates()
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "Fragment paused")
     }
 }

@@ -2,13 +2,16 @@ package com.example.taximeter
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -18,10 +21,8 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
-import pub.devrel.easypermissions.AfterPermissionGranted
-import pub.devrel.easypermissions.EasyPermissions
 
-class HomeFragment : Fragment(), OnMapReadyCallback, EasyPermissions.PermissionCallbacks {
+class HomeFragment : Fragment(), OnMapReadyCallback {
 
     private var googleMap: GoogleMap? = null
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -30,9 +31,7 @@ class HomeFragment : Fragment(), OnMapReadyCallback, EasyPermissions.PermissionC
     private lateinit var btnSavedPlaces: Button
     private lateinit var btnRecentTrips: Button
 
-    companion object {
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 124
-    }
+    private val TAG = "HomeFragment"
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -76,78 +75,164 @@ class HomeFragment : Fragment(), OnMapReadyCallback, EasyPermissions.PermissionC
             val query = searchInput.text.toString()
             if (query.isNotEmpty()) {
                 Toast.makeText(requireContext(), "Searching for: $query", Toast.LENGTH_SHORT).show()
-                // Implement geocoding/search here
+                // TODO: Implement geocoding/search here
             }
             true
         }
 
-        // Request location permission
-        requestLocationPermission()
+        Log.d(TAG, "HomeFragment initialized")
     }
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
+        Log.d(TAG, "Map is ready")
+
+        // Setup map with permission check
         setupMap()
-        requestLocationPermission()
     }
 
+    /**
+     * ✅ FIXED: Now checks permission BEFORE enabling location
+     */
     @SuppressLint("MissingPermission")
     private fun setupMap() {
         googleMap?.apply {
-            isMyLocationEnabled = true
+            // Basic map settings (safe to do without permission)
             uiSettings.isZoomControlsEnabled = false
-            uiSettings.isMyLocationButtonEnabled = true
-        }
+            uiSettings.isCompassEnabled = true
 
-        showCurrentLocation()
-    }
+            // ✅ CHECK PERMISSION FIRST
+            if (hasLocationPermission()) {
+                try {
+                    // Now it's safe to enable location features
+                    isMyLocationEnabled = true
+                    uiSettings.isMyLocationButtonEnabled = true
+                    Log.d(TAG, "My location enabled on map")
 
-    @AfterPermissionGranted(LOCATION_PERMISSION_REQUEST_CODE)
-    private fun requestLocationPermission() {
-        val perms = arrayOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-
-        if (EasyPermissions.hasPermissions(requireContext(), *perms)) {
-            showCurrentLocation()
-        } else {
-            EasyPermissions.requestPermissions(
-                this,
-                "This app needs location permission to show your location",
-                LOCATION_PERMISSION_REQUEST_CODE,
-                *perms
-            )
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun showCurrentLocation() {
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            location?.let {
-                val currentLatLng = LatLng(it.latitude, it.longitude)
-                googleMap?.apply {
-                    addMarker(MarkerOptions().position(currentLatLng).title("You are here"))
-                    animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f))
+                    // Show current location
+                    showCurrentLocation()
+                } catch (e: SecurityException) {
+                    Log.e(TAG, "SecurityException: ${e.message}")
+                    Toast.makeText(
+                        requireContext(),
+                        "Cannot access location",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
+            } else {
+                // Permission not granted - setup map without location
+                Log.w(TAG, "Location permission not granted")
+                setupMapWithoutLocation()
             }
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
+    /**
+     * Check if location permission is granted
+     */
+    private fun hasLocationPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
     }
 
-    override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
-        showCurrentLocation()
+    /**
+     * Setup map without location features (fallback)
+     */
+    private fun setupMapWithoutLocation() {
+        googleMap?.apply {
+            // Show a default location (e.g., Morocco center)
+            val defaultLocation = LatLng(33.5731, -7.5898) // Casablanca
+            moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, 12f))
+
+            Log.d(TAG, "Map setup without location features")
+
+            Toast.makeText(
+                requireContext(),
+                "Grant location permission to see your location",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
-    override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
-        Toast.makeText(requireContext(), "Location permission is required", Toast.LENGTH_LONG).show()
+    /**
+     * Show current location on map
+     */
+    @SuppressLint("MissingPermission")
+    private fun showCurrentLocation() {
+        if (!hasLocationPermission()) {
+            Log.w(TAG, "Cannot show location: permission not granted")
+            return
+        }
+
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    val currentLatLng = LatLng(location.latitude, location.longitude)
+                    googleMap?.apply {
+                        // Add marker
+                        addMarker(
+                            MarkerOptions()
+                                .position(currentLatLng)
+                                .title("You are here")
+                        )
+
+                        // Move camera
+                        animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 15f))
+
+                        Log.d(TAG, "Current location shown: ${location.latitude}, ${location.longitude}")
+                    }
+                } else {
+                    Log.w(TAG, "Last known location is null")
+                    Toast.makeText(
+                        requireContext(),
+                        "Cannot get current location. Make sure GPS is enabled.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Failed to get location: ${e.message}")
+                Toast.makeText(
+                    requireContext(),
+                    "Failed to get location",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+    }
+
+    /**
+     * Called from MainActivity when permission is granted
+     */
+    fun onPermissionGranted() {
+        Log.d(TAG, "Permission granted - refreshing map")
+
+        // Refresh map setup
+        if (googleMap != null) {
+            setupMap()
+        }
+    }
+
+    /**
+     * Refresh map when fragment resumes
+     */
+    override fun onResume() {
+        super.onResume()
+        Log.d(TAG, "Fragment resumed")
+
+        // If permission was granted while app was in background, refresh map
+        if (hasLocationPermission() && googleMap != null) {
+            setupMap()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "Fragment paused")
     }
 }

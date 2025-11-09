@@ -78,7 +78,7 @@ if (localPropertiesFile.exists()) {
         implementation(libs.google.location) // Assumed alias for play-services-location
 
         // Original dependency: Easy Permissions
-        implementation(libs.easypermissions)
+
 
         // Original dependency: QR Code Generation (Zxing)
         implementation(libs.zxing.core)
